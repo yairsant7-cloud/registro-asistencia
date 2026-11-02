@@ -75,6 +75,12 @@
     background: rgba(255,255,255,.12);
     border: 1px solid rgba(255,255,255,.18);
   }
+  .logo-img {
+    height: 48px; width: auto; flex: none; display: block;
+    border-radius: 10px; border: 1px solid rgba(255,255,255,.18);
+    box-shadow: 0 4px 14px rgba(0,0,0,.25);
+  }
+  .logo-img.logo-sm { height: 38px; border-radius: 8px; }
   .brand strong { display: block; font-size: 18px; letter-spacing: -.01em; }
   .brand span { display: block; font-size: 13px; opacity: .7; }
   .clock .time {
@@ -333,9 +339,7 @@
 <div id="kiosk" class="kiosk">
   <section class="hero">
     <div class="brand">
-      <div class="logo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-      </div>
+      <img class="logo-img" src="logo-usana.png" alt="USANA">
       <div>
         <strong>Control de Asistencia</strong>
         <span>Registro de ingreso y salida</span>
@@ -428,9 +432,7 @@
 <!-- ================= CELULAR DEL EMPLEADO ================= -->
 <div id="movil" class="movil hidden">
   <div class="brand movil-brand">
-    <div class="logo">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-    </div>
+    <img class="logo-img" src="logo-usana.png" alt="USANA">
     <div><strong>Control de Asistencia</strong><span>Mi celular</span></div>
   </div>
   <div class="card movil-card" id="movilCard"></div>
@@ -480,9 +482,7 @@
 <div id="admin" class="admin hidden">
   <header class="topbar">
     <div class="brand">
-      <div class="logo" style="width:38px;height:38px;border-radius:11px">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-      </div>
+      <img class="logo-img logo-sm" src="logo-usana.png" alt="USANA">
       <div><strong>Control de Asistencia</strong><span>Panel administrador</span></div>
     </div>
     <nav class="tabs">
