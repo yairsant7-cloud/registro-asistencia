@@ -1,0 +1,1296 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control de Asistencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f5fa;
+    --navy: #0e1a3a;
+    --navy-2: #1a2b5f;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --brand: #4263eb;
+    --in: #15803d;
+    --in-hover: #166534;
+    --in-soft: #dcfce7;
+    --out: #c2410c;
+    --out-hover: #9a3412;
+    --out-soft: #ffedd5;
+    --danger: #b91c1c;
+    --danger-soft: #fee2e2;
+    --radius: 18px;
+    --shadow: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(15,23,42,.18);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  .hidden { display: none !important; }
+
+  /* ---------- Kiosco (pantalla de marcación) ---------- */
+  .kiosk {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+  }
+  .hero {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(1200px 600px at -10% -20%, #2b45a8 0%, transparent 60%),
+      radial-gradient(900px 500px at 120% 120%, #1b6b55 0%, transparent 55%),
+      var(--navy);
+    color: #fff;
+    padding: 40px 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .hero::after {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+  }
+  .hero > * { position: relative; z-index: 1; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 46px; height: 46px; border-radius: 14px;
+    display: grid; place-items: center;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.18);
+  }
+  .brand strong { display: block; font-size: 18px; letter-spacing: -.01em; }
+  .brand span { display: block; font-size: 13px; opacity: .7; }
+  .clock .time {
+    font-size: clamp(72px, 10vw, 148px);
+    font-weight: 800;
+    letter-spacing: -.04em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .clock .time small { font-size: .38em; font-weight: 600; opacity: .55; margin-left: 6px; letter-spacing: 0; }
+  .clock .date { margin-top: 14px; font-size: clamp(18px, 1.8vw, 24px); opacity: .8; }
+  .clock .date::first-letter { text-transform: uppercase; }
+  .hero-foot { display: flex; align-items: center; gap: 10px; font-size: 14px; opacity: .85; }
+  .pulse {
+    width: 10px; height: 10px; border-radius: 50%; background: #4ade80;
+    box-shadow: 0 0 0 0 rgba(74,222,128,.6);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { to { box-shadow: 0 0 0 12px rgba(74,222,128,0); } }
+
+  .side {
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 40px 24px; gap: 18px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+  }
+  .mark-card { width: 100%; max-width: 440px; padding: 36px; }
+  .mark-card h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+  .sub { margin: 6px 0 26px; color: var(--muted); font-size: 15px; }
+  .field { display: block; margin-bottom: 16px; }
+  .field > span { display: block; font-size: 13px; font-weight: 600; margin-bottom: 7px; color: #334155; }
+  .input {
+    width: 100%; height: 52px; padding: 0 16px;
+    border: 1.5px solid var(--line); border-radius: 12px; background: #f8fafc;
+    font-size: 16px; outline: none; transition: border-color .15s, box-shadow .15s, background .15s;
+  }
+  .input:focus { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 4px rgba(66,99,235,.14); }
+  .pw { position: relative; }
+  .pw .input { padding-right: 52px; }
+  .eye {
+    position: absolute; right: 6px; top: 6px; width: 40px; height: 40px;
+    border: 0; background: transparent; border-radius: 10px; cursor: pointer; color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .eye:hover { background: #eef2f7; }
+  .msg {
+    display: none; margin: 4px 0 16px; padding: 12px 14px; border-radius: 12px;
+    font-size: 14px; font-weight: 500; background: var(--danger-soft); color: var(--danger);
+  }
+  .msg.show { display: block; animation: shake .3s; }
+  @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+  .btn-big {
+    height: 76px; border: 0; border-radius: 14px; cursor: pointer; color: #fff;
+    font-size: 16px; font-weight: 700;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    transition: transform .08s, background .15s;
+  }
+  .btn-big:active { transform: scale(.97); }
+  .btn-big:disabled { opacity: .6; cursor: wait; }
+  .btn-in { background: var(--in); }
+  .btn-in:hover { background: var(--in-hover); }
+  .btn-out { background: var(--out); }
+  .btn-out:hover { background: var(--out-hover); }
+  .link-btn {
+    border: 0; background: none; color: var(--muted); font-size: 14px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 10px;
+  }
+  .link-btn:hover { color: var(--text); background: #e8ecf4; }
+
+  /* ---------- Confirmación ---------- */
+  .overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(14,26,58,.55); backdrop-filter: blur(6px);
+    display: grid; place-items: center; padding: 16px;
+    animation: fade .2s;
+  }
+  @keyframes fade { from { opacity: 0; } }
+  .ok-card { width: 100%; max-width: 420px; padding: 40px 32px 0; text-align: center; overflow: hidden; animation: pop .25s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } }
+  .ok-icon { width: 84px; height: 84px; margin: 0 auto 18px; border-radius: 50%; display: grid; place-items: center; }
+  .ok-card.in .ok-icon { background: var(--in-soft); color: var(--in); }
+  .ok-card.out .ok-icon { background: var(--out-soft); color: var(--out); }
+  .ok-card h2 { margin: 0 0 6px; font-size: 24px; letter-spacing: -.02em; }
+  .ok-card p { margin: 0; color: var(--muted); }
+  .ok-time { margin: 18px 0 6px; font-size: 52px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .ok-extra { font-size: 14px; color: var(--muted); min-height: 20px; margin-bottom: 26px; }
+  .ok-bar { height: 5px; background: #eef2f7; margin: 0 -32px; }
+  .ok-bar i { display: block; height: 100%; width: 100%; transform-origin: left; }
+  .ok-card.in .ok-bar i { background: var(--in); }
+  .ok-card.out .ok-bar i { background: var(--out); }
+
+  /* ---------- Diálogo admin ---------- */
+  dialog { border: 0; padding: 0; background: transparent; }
+  dialog::backdrop { background: rgba(14,26,58,.55); backdrop-filter: blur(4px); }
+  .dlg { width: min(400px, calc(100vw - 32px)); padding: 30px; }
+  .dlg h3 { margin: 0 0 4px; font-size: 20px; }
+  .row-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+  .btn {
+    height: 44px; padding: 0 18px; border-radius: 11px; border: 1.5px solid var(--line);
+    background: #fff; cursor: pointer; font-weight: 600; font-size: 14px;
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  }
+  .btn:hover { background: #f1f5f9; }
+  .btn-primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .btn-primary:hover { background: #3651d4; }
+  .btn-sm { height: 34px; padding: 0 12px; font-size: 13px; border-radius: 9px; }
+  .btn-danger { color: var(--danger); }
+  .btn-danger:hover { background: var(--danger-soft); border-color: #fecaca; }
+
+  /* ---------- Panel administrador ---------- */
+  .admin { min-height: 100vh; }
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--navy); color: #fff;
+    display: flex; align-items: center; gap: 24px; padding: 0 28px; height: 68px;
+  }
+  .topbar .brand strong { font-size: 16px; }
+  .tabs { display: flex; gap: 4px; margin-left: 12px; }
+  .tab {
+    border: 0; background: transparent; color: rgba(255,255,255,.7); cursor: pointer;
+    padding: 9px 16px; border-radius: 10px; font-weight: 600; font-size: 14px;
+  }
+  .tab:hover { color: #fff; background: rgba(255,255,255,.08); }
+  .tab.active { color: #fff; background: rgba(255,255,255,.14); }
+  .topbar .spacer { flex: 1; }
+  .who { font-size: 13px; opacity: .75; }
+  .topbar .btn { background: transparent; color: #fff; border-color: rgba(255,255,255,.25); height: 38px; }
+  .topbar .btn:hover { background: rgba(255,255,255,.1); }
+  .admin main { max-width: 1200px; margin: 0 auto; padding: 28px; }
+  .page-title { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .page-title h2 { margin: 0; font-size: 24px; letter-spacing: -.02em; }
+  .page-title p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .kpi { padding: 18px 20px; }
+  .kpi .label { font-size: 13px; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .kpi .value { font-size: 30px; font-weight: 800; letter-spacing: -.03em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .kpi .hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .kdot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .toolbar { display: flex; gap: 12px; align-items: end; padding: 16px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+  .toolbar label { font-size: 12px; font-weight: 600; color: var(--muted); display: flex; flex-direction: column; gap: 5px; }
+  .toolbar .input { height: 42px; width: auto; min-width: 150px; font-size: 14px; }
+  .toolbar .grow { flex: 1; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--muted); font-weight: 700; padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  td { padding: 13px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: #fafbfe; }
+  .person { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+    font-size: 12px; font-weight: 700; color: #fff; flex: none;
+  }
+  .person small { display: block; color: var(--muted); font-size: 12px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .b-ok { background: #e0e7ff; color: #3730a3; }
+  .b-live { background: var(--in-soft); color: var(--in); }
+  .b-warn { background: #fef3c7; color: #92400e; }
+  .b-off { background: #f1f5f9; color: var(--muted); }
+  .b-admin { background: #ede9fe; color: #6d28d9; }
+  .t-in { color: var(--in); font-weight: 600; }
+  .t-out { color: var(--out); font-weight: 600; }
+  .muted { color: var(--muted); }
+  .empty { padding: 48px 16px; text-align: center; color: var(--muted); }
+
+  .emp-grid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+  .emp-grid > * { min-width: 0; }
+  .emp-form { padding: 24px; }
+  .emp-form h3 { margin: 0 0 16px; font-size: 17px; }
+  .emp-form .input { height: 46px; font-size: 15px; }
+  .acts { display: flex; gap: 6px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 60;
+    background: var(--navy); color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 14px;
+    box-shadow: var(--shadow); animation: fade .2s;
+  }
+
+  .equipo-tag { margin-left: auto; padding: 5px 12px; border-radius: 999px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.16); font-size: 13px; }
+  .locked { text-align: center; }
+  .lock-icon { width: 76px; height: 76px; margin: 0 auto 18px; border-radius: 50%; display: grid; place-items: center; background: var(--danger-soft); color: var(--danger); }
+  .hint-box { margin: 0; padding: 14px 16px; border-radius: 12px; background: #f1f5f9; color: #334155; font-size: 14px; line-height: 1.5; }
+  .emp-form p { color: var(--muted); font-size: 14px; line-height: 1.5; margin: -6px 0 18px; }
+  .eq { display: block; font-size: 11px; color: var(--muted); font-weight: 500; }
+
+  /* QR en el kiosco */
+  .qr-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .qr-timer { font-size: 14px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .qr-timer.urgente { color: var(--danger); }
+  .qr-wrap { display: grid; place-items: center; margin: 4px 0 16px; }
+  .qr-img { width: 200px; height: 200px; padding: 10px; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; }
+  .qr-img svg { display: block; width: 100%; height: 100%; }
+  .steps { margin: 0 0 16px; padding-left: 20px; color: #334155; font-size: 14px; line-height: 1.6; }
+  .code-input { text-align: center; font-size: 28px; font-weight: 800; letter-spacing: .35em; font-variant-numeric: tabular-nums; height: 60px; }
+  .btn-wide { width: 100%; height: 60px; flex-direction: row; gap: 10px; }
+  .btn-cancel { display: flex; margin: 10px auto 0; }
+  .aviso-file { margin: 0 0 14px; padding: 10px 12px; border-radius: 10px; background: #fef3c7; color: #92400e; font-size: 13px; }
+
+  /* Vista del celular */
+  .movil { min-height: 100vh; background: var(--navy); padding: 20px 16px 32px; display: flex; flex-direction: column; align-items: center; gap: 22px; color: #fff; }
+  .movil-brand { width: 100%; max-width: 420px; }
+  .movil-card { width: 100%; max-width: 420px; padding: 30px 24px; color: var(--text); text-align: center; }
+  .movil-card h2 { margin: 0 0 8px; font-size: 22px; letter-spacing: -.02em; }
+  .movil-card p { margin: 0 0 16px; color: var(--muted); line-height: 1.5; }
+  .m-icon { width: 72px; height: 72px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center; }
+  .m-ok { background: var(--in-soft); color: var(--in); }
+  .m-error { background: var(--danger-soft); color: var(--danger); }
+  .m-info { background: #e0e7ff; color: var(--brand); }
+  .big-code { font-size: 56px; font-weight: 800; letter-spacing: .08em; font-variant-numeric: tabular-nums; margin: 6px 0 14px; color: var(--text); }
+  .spinner { width: 44px; height: 44px; margin: 10px auto 18px; border-radius: 50%; border: 4px solid #e2e8f0; border-top-color: var(--brand); animation: girar 1s linear infinite; }
+  @keyframes girar { to { transform: rotate(360deg); } }
+  .btn-full { width: 100%; justify-content: center; height: 52px; font-size: 16px; }
+
+  /* Admin: vincular y ubicación */
+  .vinc { text-align: center; }
+  .ubic { padding: 20px 24px; margin-bottom: 20px; display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .ubic h3 { margin: 0 0 4px; font-size: 17px; }
+  .ubic p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; max-width: 560px; }
+  .ubic-acts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .ubic-acts .input { height: 44px; width: auto; font-size: 14px; }
+  .ubic .msg { flex-basis: 100%; margin: 0; }
+
+  @media (max-width: 960px) {
+    .kiosk { grid-template-columns: 1fr; }
+    .hero { padding: 28px 24px; gap: 28px; min-height: auto; }
+    .clock .time { font-size: 72px; }
+    .side { justify-content: flex-start; padding: 24px 16px 32px; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .emp-grid { grid-template-columns: 1fr; }
+    .topbar { padding: 10px 16px; gap: 10px; height: auto; min-height: 60px; flex-wrap: wrap; }
+    .tabs { margin-left: 0; order: 3; width: 100%; overflow-x: auto; }
+  }
+  @media (max-width: 640px) {
+    .mark-card { padding: 26px 20px; }
+    .topbar .brand span, .who { display: none; }
+    .admin main { padding: 20px 16px; }
+    .toolbar .input { min-width: 0; width: 100%; }
+    .toolbar label { flex: 1 1 140px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= KIOSCO ================= -->
+<div id="kiosk" class="kiosk">
+  <section class="hero">
+    <div class="brand">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </div>
+      <div>
+        <strong>Control de Asistencia</strong>
+        <span>Registro de ingreso y salida</span>
+      </div>
+    </div>
+
+    <div class="clock">
+      <div class="time" id="time">--:--<small>--</small></div>
+      <div class="date" id="date"></div>
+    </div>
+
+    <div class="hero-foot">
+      <span class="pulse"></span>
+      <span id="presentes">—</span>
+      <span class="equipo-tag hidden" id="equipoTag"></span>
+    </div>
+  </section>
+
+  <section class="side">
+    <form class="card mark-card hidden" id="markForm" autocomplete="off">
+      <h1>Marca tu asistencia</h1>
+      <p class="sub">Digita tu usuario y clave, luego elige si es tu ingreso o tu salida.</p>
+
+      <label class="field">
+        <span>Usuario</span>
+        <input class="input" id="mUser" placeholder="Ej: jperez" autocapitalize="off" spellcheck="false">
+      </label>
+      <label class="field">
+        <span>Clave</span>
+        <div class="pw">
+          <input class="input" id="mPass" type="password" placeholder="••••">
+          <button type="button" class="eye" data-eye="mPass" aria-label="Mostrar clave">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </label>
+
+      <div class="msg" id="mMsg"></div>
+
+      <div class="actions">
+        <button type="button" class="btn-big btn-in" data-tipo="ingreso">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+          Marcar ingreso
+        </button>
+        <button type="button" class="btn-big btn-out" data-tipo="salida">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          Marcar salida
+        </button>
+      </div>
+    </form>
+
+    <div class="card mark-card hidden" id="qrCard">
+      <div class="qr-head">
+        <span class="badge" id="qrTipo"></span>
+        <span class="qr-timer" id="qrTimer"></span>
+      </div>
+      <h1 id="qrTitulo"></h1>
+      <p class="sub">Confirma con tu celular vinculado.</p>
+      <p class="aviso-file hidden" id="qrAviso">La página está abierta como archivo: el celular no podrá abrir este QR hasta que la página esté publicada en internet.</p>
+      <div class="qr-wrap"><div class="qr-img" id="qrImg"></div></div>
+      <ol class="steps">
+        <li>Escanea este código con la cámara de <strong>tu</strong> celular.</li>
+        <li>Escribe aquí el código de 6 números que te aparece.</li>
+      </ol>
+      <label class="field">
+        <span>Código de acceso</span>
+        <input class="input code-input" id="qrCodigo" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="······">
+      </label>
+      <div class="msg" id="qrMsg"></div>
+      <button type="button" class="btn-big btn-in btn-wide" id="qrConfirmar"></button>
+      <button type="button" class="link-btn btn-cancel" id="qrCancelar">Cancelar</button>
+    </div>
+
+    <div class="card mark-card locked hidden" id="lockedCard">
+      <div class="lock-icon">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h1>Equipo no autorizado</h1>
+      <p class="sub">Por seguridad, la asistencia solo se puede marcar desde los computadores de la tienda.</p>
+      <p class="hint-box">Si este es un computador de la tienda, pídele al administrador que lo autorice en <strong>Acceso administrador → Equipos</strong>.</p>
+    </div>
+
+    <button class="link-btn" id="openAdmin">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Acceso administrador
+    </button>
+  </section>
+</div>
+
+<!-- ================= CELULAR DEL EMPLEADO ================= -->
+<div id="movil" class="movil hidden">
+  <div class="brand movil-brand">
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    </div>
+    <div><strong>Control de Asistencia</strong><span>Mi celular</span></div>
+  </div>
+  <div class="card movil-card" id="movilCard"></div>
+</div>
+
+<!-- Confirmación de marcación -->
+<div id="ok" class="overlay hidden">
+  <div class="card ok-card" id="okCard">
+    <div class="ok-icon">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <h2 id="okTitle"></h2>
+    <p id="okText"></p>
+    <div class="ok-time" id="okTime"></div>
+    <div class="ok-extra" id="okExtra"></div>
+    <div class="ok-bar"><i id="okBar"></i></div>
+  </div>
+</div>
+
+<!-- Login administrador -->
+<dialog id="adminDlg">
+  <form class="card dlg" id="adminForm" method="dialog">
+    <h3>Acceso administrador</h3>
+    <p class="sub">Solo personal autorizado.</p>
+    <label class="field"><span>Usuario</span><input class="input" id="aUser" autocapitalize="off"></label>
+    <label class="field"><span>Clave</span><input class="input" id="aPass" type="password"></label>
+    <div class="msg" id="aMsg"></div>
+    <div class="row-btns">
+      <button type="button" class="btn" id="aCancel">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Entrar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- QR para vincular el celular de un empleado -->
+<dialog id="vincDlg">
+  <div class="card dlg vinc">
+    <h3>Vincular celular</h3>
+    <p class="sub" id="vincNombre"></p>
+    <div class="qr-wrap"><div class="qr-img" id="vincQr"></div></div>
+    <p class="hint-box">La persona debe escanear este código con la cámara de <strong>su propio celular</strong> y oprimir "Vincular mi celular". Vence en 10 minutos.</p>
+    <div class="row-btns" style="justify-content:center"><button type="button" class="btn btn-primary" id="vincCerrar">Listo</button></div>
+  </div>
+</dialog>
+
+<!-- ================= PANEL ADMIN ================= -->
+<div id="admin" class="admin hidden">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" style="width:38px;height:38px;border-radius:11px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </div>
+      <div><strong>Control de Asistencia</strong><span>Panel administrador</span></div>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="registros">Registros</button>
+      <button class="tab" data-tab="empleados">Empleados</button>
+      <button class="tab" data-tab="equipos">Equipos</button>
+    </nav>
+    <div class="spacer"></div>
+    <span class="who" id="who"></span>
+    <button class="btn" id="logout">Salir</button>
+  </header>
+
+  <main>
+    <!-- Registros -->
+    <section id="tab-registros">
+      <div class="page-title">
+        <div>
+          <h2>Registros de asistencia</h2>
+          <p>Jornadas armadas a partir de cada ingreso y su salida.</p>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="card kpi"><div class="label"><span class="kdot" style="background:var(--in)"></span>Trabajando ahora</div><div class="value" id="kNow">0</div><div class="hint" id="kNowHint">&nbsp;</div></div>
+        <div class="card kpi"><div class="label"><span class="kdot" style="background:var(--brand)"></span>Ingresos hoy</div><div class="value" id="kToday">0</div><div class="hint" id="kTodayHint">&nbsp;</div></div>
+        <div class="card kpi"><div class="label"><span class="kdot" style="background:#0891b2"></span>Horas en el rango</div><div class="value" id="kHours">0 h</div><div class="hint">Jornadas cerradas</div></div>
+        <div class="card kpi"><div class="label"><span class="kdot" style="background:#d97706"></span>Sin marcar salida</div><div class="value" id="kMissing">0</div><div class="hint">Días anteriores</div></div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <label>Desde <input type="date" class="input" id="fFrom"></label>
+          <label>Hasta <input type="date" class="input" id="fTo"></label>
+          <label>Empleado <select class="input" id="fEmp"></select></label>
+          <div class="grow"></div>
+          <button class="btn" id="exportCsv">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+            Exportar a Excel (CSV)
+          </button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Empleado</th><th>Fecha</th><th>Ingreso</th><th>Salida</th><th>Horas</th><th>Estado</th></tr></thead>
+            <tbody id="regBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Empleados -->
+    <section id="tab-empleados" class="hidden">
+      <div class="page-title">
+        <div>
+          <h2>Empleados</h2>
+          <p>Crea usuarios, cambia claves o desactiva a quien ya no trabaje.</p>
+        </div>
+      </div>
+      <div class="emp-grid">
+        <form class="card emp-form" id="empForm" autocomplete="off">
+          <h3>Nuevo empleado</h3>
+          <label class="field"><span>Nombre completo</span><input class="input" id="eNombre" required></label>
+          <label class="field"><span>Cargo / área</span><input class="input" id="eCargo"></label>
+          <label class="field"><span>Usuario</span><input class="input" id="eUser" required autocapitalize="off"></label>
+          <label class="field"><span>Clave</span><input class="input" id="ePass" required minlength="4"></label>
+          <label class="field"><span>Rol</span>
+            <select class="input" id="eRol"><option value="empleado">Empleado</option><option value="admin">Administrador</option></select>
+          </label>
+          <div class="msg" id="eMsg"></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;height:48px">Guardar empleado</button>
+        </form>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Empleado</th><th>Usuario</th><th>Estado hoy</th><th>Celular</th><th>Cuenta</th><th></th></tr></thead>
+              <tbody id="empBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Equipos -->
+    <section id="tab-equipos" class="hidden">
+      <div class="page-title">
+        <div>
+          <h2>Equipos autorizados</h2>
+          <p>Solo estos computadores pueden marcar ingreso y salida. Desde celulares u otros equipos no se puede.</p>
+        </div>
+      </div>
+      <div class="card ubic" id="ubicCard"></div>
+      <div class="emp-grid">
+        <div class="card emp-form" id="esteEquipo"></div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Equipo</th><th>Autorizado</th><th>Última marcación</th><th></th></tr></thead>
+              <tbody id="eqBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+/* ============================================================
+   Conexión a la base de datos (Supabase).
+   La clave pública solo permite llamar las funciones del servidor
+   (marcar, presentes, admin_*): las tablas no se pueden leer directo
+   y cada función revisa usuario/clave o la sesión del administrador.
+   ============================================================ */
+const SUPABASE_URL = 'https://tknrtsgmxhdikhfyypjy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_y_dlUW5E3lC5oEeK-Oddiw_cszfFyiP';
+const MAX_JORNADA_H = 16;              // igual que en el servidor: un ingreso abierto por más de esto queda "sin salida"
+const COLORS = ['#4263eb', '#0891b2', '#7c3aed', '#db2777', '#059669', '#d97706', '#475569'];
+
+const $ = (s) => document.querySelector(s);
+
+async function rpc(fn, args = {}) {
+  let res;
+  try {
+    res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(args),
+    });
+  } catch {
+    return { error: 'Sin conexión a internet. Revisa la red e intenta de nuevo.' };
+  }
+  if (!res.ok) return { error: 'No se pudo conectar con el servidor. Intenta de nuevo.' };
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : {};
+}
+
+// La sesión del administrador vive solo mientras la pestaña esté abierta
+const memoria = {};
+const sesion = {
+  get: (k) => { try { return sessionStorage.getItem(k); } catch { return memoria[k] ?? null; } },
+  set: (k, v) => { try { sessionStorage.setItem(k, v); } catch { memoria[k] = v; } },
+  del: (k) => { try { sessionStorage.removeItem(k); } catch { delete memoria[k]; } },
+};
+
+// Llave de este computador: queda guardada en el navegador cuando el admin lo autoriza
+const LLAVE_EQUIPO = 'asis_equipo';
+const equipoLocal = {
+  get: () => { try { return localStorage.getItem(LLAVE_EQUIPO); } catch { return null; } },
+  set: (v) => { try { localStorage.setItem(LLAVE_EQUIPO, v); return true; } catch { return false; } },
+  del: () => { try { localStorage.removeItem(LLAVE_EQUIPO); } catch {} },
+};
+let equipo;   // undefined = sin verificar, null = no autorizado, { id, nombre } = autorizado
+let retoActual = null, qrTimer;   // marcación en curso esperando el código del celular
+
+// Llave del celular personal del empleado: queda guardada cuando vincula su celular
+const LLAVE_CELULAR = 'asis_celular';
+const celularLocal = {
+  get: () => { try { return localStorage.getItem(LLAVE_CELULAR); } catch { return null; } },
+  set: (v) => { try { localStorage.setItem(LLAVE_CELULAR, v); return true; } catch { return false; } },
+};
+
+// Dirección de esta misma página: los QR apuntan aquí con ?reto= o ?vincular=
+const BASE_URL = location.origin + location.pathname;
+
+/* ---------- Formatos ---------- */
+const fHora = (d) => new Date(d).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
+const fFecha = (d) => new Date(d).toLocaleDateString('es-CO', { weekday: 'short', day: '2-digit', month: 'short' });
+const ymd = (d) => { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+const esHoy = (d) => ymd(d) === ymd(new Date());
+function fDuracion(ms) {
+  const min = Math.max(0, Math.round(ms / 60000));
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min`;
+}
+const iniciales = (n) => n.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+const color = (id) => COLORS[[...id].reduce((a, c) => a + c.charCodeAt(0), 0) % COLORS.length];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function mostrarError(el, texto) {
+  el.textContent = texto;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+}
+
+/* ============================================================
+   KIOSCO
+   ============================================================ */
+function tick() {
+  const now = new Date();
+  const hm = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/\s?[ap]\.?\s?m\.?/i, '');
+  const ampm = now.getHours() < 12 ? 'a. m.' : 'p. m.';
+  $('#time').innerHTML = `${hm}<small>${String(now.getSeconds()).padStart(2, '0')} ${ampm}</small>`;
+  $('#date').textContent = now.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+async function pintarPresentes() {
+  const n = await rpc('presentes');
+  $('#presentes').textContent = typeof n !== 'number' ? 'Sin conexión con el servidor'
+    : n === 0 ? 'Nadie ha marcado ingreso todavía'
+    : n === 1 ? '1 persona trabajando ahora' : `${n} personas trabajando ahora`;
+}
+
+async function verificarEquipo() {
+  const llave = equipoLocal.get();
+  if (!llave) equipo = null;
+  else {
+    const r = await rpc('equipo_estado', { p_equipo: llave });
+    if (r.error) equipo = undefined;              // sin conexión: se muestra el formulario y el servidor decide al marcar
+    else if (!r.autorizado) { equipo = null; equipoLocal.del(); }
+    else equipo = { id: r.id, nombre: r.nombre };
+  }
+  pintarKiosco();
+}
+function pintarKiosco() {
+  $('#markForm').classList.toggle('hidden', equipo === null || !!retoActual);
+  $('#qrCard').classList.toggle('hidden', equipo === null || !retoActual);
+  $('#lockedCard').classList.toggle('hidden', equipo !== null);
+  $('#equipoTag').classList.toggle('hidden', !equipo);
+  $('#equipoTag').textContent = equipo ? `Equipo: ${equipo.nombre}` : '';
+}
+
+const botonesMarcar = document.querySelectorAll('[data-tipo]');
+
+async function marcar(tipo) {
+  const msg = $('#mMsg');
+  msg.classList.remove('show');
+  const usuario = $('#mUser').value, clave = $('#mPass').value;
+  if (!usuario.trim() || !clave) return mostrarError(msg, 'Escribe tu usuario y tu clave.');
+
+  botonesMarcar.forEach((b) => (b.disabled = true));
+  const r = await rpc('marcar_iniciar', { p_usuario: usuario, p_clave: clave, p_tipo: tipo, p_equipo: equipoLocal.get() });
+  botonesMarcar.forEach((b) => (b.disabled = false));
+  if (r.error) return errorMarcacion(r);
+  $('#markForm').reset();
+  mostrarQr(r);
+}
+
+// Cualquier error que obliga a empezar de nuevo vuelve al formulario con el mensaje
+function errorMarcacion(r) {
+  const claveMala = r.error.startsWith('Usuario o clave');
+  if (r.codigo === 'equipo') { equipo = null; equipoLocal.del(); }
+  if (claveMala) $('#mPass').value = ''; else $('#markForm').reset();
+  cerrarQr();
+  if (r.codigo === 'equipo') return;
+  const texto = r.codigo === 'ya_ingreso'
+    ? `Ya marcaste ingreso a las ${fHora(r.ingreso_desde)}. Te falta marcar la salida.` : r.error;
+  mostrarError($('#mMsg'), texto);
+  (claveMala ? $('#mPass') : $('#mUser')).focus();
+}
+
+// Paso 2: QR para el celular del empleado y campo para el código de acceso
+function mostrarQr(r) {
+  retoActual = { id: r.reto, tipo: r.tipo, vence: Date.now() + r.segundos * 1000 };
+  const esIngreso = r.tipo === 'ingreso';
+  $('#qrTipo').className = 'badge ' + (esIngreso ? 'b-live' : 'b-warn');
+  $('#qrTipo').textContent = esIngreso ? 'Ingreso' : 'Salida';
+  $('#qrTitulo').textContent = `Hola, ${r.nombre.split(' ')[0]}`;
+  $('#qrConfirmar').className = 'btn-big btn-wide ' + (esIngreso ? 'btn-in' : 'btn-out');
+  $('#qrConfirmar').textContent = esIngreso ? 'Confirmar ingreso' : 'Confirmar salida';
+  $('#qrAviso').classList.toggle('hidden', location.protocol !== 'file:');
+  pintarQr($('#qrImg'), `${BASE_URL}?reto=${r.reto}`);
+  $('#qrCodigo').value = '';
+  $('#qrMsg').classList.remove('show'); $('#mMsg').classList.remove('show');
+  pintarKiosco();
+  $('#qrCodigo').focus();
+  clearInterval(qrTimer);
+  qrTimer = setInterval(tickQr, 500); tickQr();
+}
+function pintarQr(el, texto) {
+  const qr = qrcode(0, 'M');
+  qr.addData(texto);
+  qr.make();
+  el.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+}
+function tickQr() {
+  if (!retoActual) return;
+  const s = Math.max(0, Math.ceil((retoActual.vence - Date.now()) / 1000));
+  $('#qrTimer').textContent = `Vence en ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  $('#qrTimer').classList.toggle('urgente', s <= 30);
+  if (!s) { cerrarQr(); mostrarError($('#mMsg'), 'El código venció. Vuelve a marcar.'); }
+}
+function cerrarQr() {
+  retoActual = null;
+  clearInterval(qrTimer);
+  pintarKiosco();
+}
+
+// Paso 3: el código que le salió en el celular confirma la marcación
+async function confirmarCodigo() {
+  if (!retoActual) return;
+  const codigo = $('#qrCodigo').value.replace(/\D/g, '');
+  if (codigo.length !== 6) return mostrarError($('#qrMsg'), 'El código tiene 6 números.');
+  const btn = $('#qrConfirmar'); btn.disabled = true;
+  const tipo = retoActual.tipo;
+  const r = await rpc('marcar_confirmar', { p_reto: retoActual.id, p_codigo: codigo, p_equipo: equipoLocal.get() });
+  btn.disabled = false;
+  if (r.error) {
+    if (!r.error.startsWith('Código incorrecto')) return errorMarcacion(r);
+    $('#qrCodigo').value = ''; $('#qrCodigo').focus();
+    return mostrarError($('#qrMsg'), r.error);
+  }
+  cerrarQr();
+  const nombre = r.nombre.split(' ')[0];
+  confirmar({
+    tipo,
+    titulo: tipo === 'ingreso' ? `¡Bienvenido, ${nombre}!` : `¡Hasta luego, ${nombre}!`,
+    texto: tipo === 'ingreso' ? 'Tu ingreso quedó registrado' : 'Tu salida quedó registrada',
+    hora: fHora(r.fecha),
+    extra: tipo === 'salida' ? `Trabajaste ${fDuracion(new Date(r.fecha) - new Date(r.ingreso_desde))} hoy` : r.cargo,
+  });
+  pintarPresentes();
+}
+$('#qrConfirmar').addEventListener('click', confirmarCodigo);
+$('#qrCodigo').addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmarCodigo(); });
+$('#qrCodigo').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); });
+$('#qrCancelar').addEventListener('click', () => { cerrarQr(); $('#mUser').focus(); });
+
+let okTimer;
+function confirmar({ tipo, titulo, texto, hora, extra }) {
+  const card = $('#okCard');
+  card.className = 'card ok-card ' + (tipo === 'ingreso' ? 'in' : 'out');
+  $('#okTitle').textContent = titulo;
+  $('#okText').textContent = texto;
+  $('#okTime').textContent = hora;
+  $('#okExtra').textContent = extra;
+  const bar = $('#okBar');
+  bar.style.transition = 'none'; bar.style.transform = 'scaleX(1)';
+  $('#ok').classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    bar.style.transition = 'transform 4s linear'; bar.style.transform = 'scaleX(0)';
+  }));
+  clearTimeout(okTimer);
+  okTimer = setTimeout(cerrarOk, 4000);
+}
+function cerrarOk() { $('#ok').classList.add('hidden'); $('#mUser').focus(); }
+$('#ok').addEventListener('click', cerrarOk);
+
+botonesMarcar.forEach((b) => b.addEventListener('click', () => marcar(b.dataset.tipo)));
+$('#markForm').addEventListener('submit', (e) => e.preventDefault());
+$('#mUser').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#mPass').focus(); });
+document.querySelectorAll('[data-eye]').forEach((b) => b.addEventListener('click', () => {
+  const i = document.getElementById(b.dataset.eye); i.type = i.type === 'password' ? 'text' : 'password';
+}));
+
+/* ============================================================
+   CELULAR DEL EMPLEADO (se abre al escanear un QR)
+   ============================================================ */
+const parametros = new URLSearchParams(location.search);
+const esCelular = ['reto', 'vincular', 'celular'].some((p) => parametros.has(p));
+const ICONOS = {
+  ok: '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  error: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  info: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>',
+};
+
+function pantallaMovil({ icono, titulo, texto = '', extra = '' }) {
+  $('#movilCard').innerHTML = (icono ? `<div class="m-icon m-${icono}">${ICONOS[icono]}</div>` : '') +
+    `<h2>${titulo}</h2>${texto ? `<p>${texto}</p>` : ''}${extra}`;
+}
+function infoCelular() {
+  const m = navigator.userAgent.match(/\(([^)]+)\)/);
+  return m ? m[1] : navigator.userAgent;
+}
+function obtenerUbicacion() {
+  return new Promise((listo) => {
+    if (!navigator.geolocation) return listo({ error: 'Este navegador no permite usar la ubicación.' });
+    navigator.geolocation.getCurrentPosition(
+      (p) => listo({ lat: p.coords.latitude, lng: p.coords.longitude, precision: p.coords.accuracy }),
+      (e) => listo({ error: e.code === 1
+        ? 'No diste permiso para usar la ubicación. Actívalo en la configuración del navegador para esta página e intenta de nuevo.'
+        : 'No se pudo obtener tu ubicación. Activa el GPS e intenta de nuevo.' }),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  });
+}
+
+function iniciarMovil() {
+  $('#kiosk').classList.add('hidden'); $('#movil').classList.remove('hidden');
+  if (parametros.has('vincular')) movilVincular(parametros.get('vincular'));
+  else if (parametros.has('reto')) movilReto(parametros.get('reto'));
+  else movilEstado();
+}
+
+function movilVincular(id) {
+  pantallaMovil({
+    icono: 'info', titulo: 'Vincular este celular',
+    texto: 'Este celular quedará registrado como tuyo para confirmar tus marcaciones. Solo puedes tener uno: si después vinculas otro, este deja de servir.',
+    extra: '<button class="btn btn-primary btn-full" id="mvVincular">Vincular mi celular</button>',
+  });
+  $('#mvVincular').addEventListener('click', async (ev) => {
+    ev.target.disabled = true; ev.target.textContent = 'Vinculando…';
+    const r = await rpc('celular_vincular', { p_vinculo: id, p_info: infoCelular() });
+    if (r.error) return pantallaMovil({ icono: 'error', titulo: 'No se pudo vincular', texto: esc(r.error) });
+    if (!celularLocal.set(r.llave)) {
+      return pantallaMovil({ icono: 'error', titulo: 'No se pudo guardar',
+        texto: 'Este navegador no permite guardar datos (¿modo incógnito?). Ábrelo en una ventana normal y pídele al administrador un código nuevo.' });
+    }
+    history.replaceState(null, '', BASE_URL + '?celular');
+    pantallaMovil({ icono: 'ok', titulo: `¡Listo, ${esc(r.nombre.split(' ')[0])}!`,
+      texto: 'Este celular quedó vinculado. Cada vez que marques en el computador de la tienda, escanea el QR con este mismo celular.' });
+  });
+}
+
+let movilTimer;
+async function movilReto(id) {
+  const llave = celularLocal.get();
+  if (!llave) {
+    return pantallaMovil({ icono: 'error', titulo: 'Celular no vinculado',
+      texto: 'Pídele al administrador que vincule tu celular. Si ya lo vinculaste, abre el QR con el mismo navegador que usaste esa vez.' });
+  }
+  pantallaMovil({ titulo: 'Verificando…', texto: 'Estamos revisando tu ubicación. Si el celular lo pide, permite el acceso.', extra: '<div class="spinner"></div>' });
+  const pos = await obtenerUbicacion();
+  const r = await rpc('reto_ver', { p_reto: id, p_celular: llave, p_lat: pos.lat ?? null, p_lng: pos.lng ?? null, p_precision: pos.precision ?? null });
+  if (r.error) {
+    const texto = r.codigo === 'ubicacion' && pos.error ? pos.error : r.error;
+    const reintentar = ['ubicacion', 'lejos'].includes(r.codigo);
+    pantallaMovil({ icono: 'error', titulo: 'No se pudo generar el código', texto: esc(texto),
+      extra: reintentar ? '<button class="btn btn-full" id="mvReintentar">Intentar de nuevo</button>' : '' });
+    if (reintentar) $('#mvReintentar').addEventListener('click', () => movilReto(id));
+    return;
+  }
+  const vence = Date.now() + r.segundos * 1000;
+  pantallaMovil({
+    titulo: `Hola, ${esc(r.nombre.split(' ')[0])}`,
+    texto: `Tu código para marcar <strong>${r.tipo === 'ingreso' ? 'ingreso' : 'salida'}</strong> es:`,
+    extra: `<div class="big-code">${r.codigo.slice(0, 3)} ${r.codigo.slice(3)}</div>
+            <p>Escríbelo en el computador de la tienda.</p><p class="muted" id="mvTimer"></p>`,
+  });
+  clearInterval(movilTimer);
+  const tic = () => {
+    const el = $('#mvTimer'); if (!el) return clearInterval(movilTimer);
+    const s = Math.max(0, Math.ceil((vence - Date.now()) / 1000));
+    el.textContent = s ? `Vence en ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : 'El código venció.';
+    if (!s) clearInterval(movilTimer);
+  };
+  movilTimer = setInterval(tic, 500); tic();
+}
+
+async function movilEstado() {
+  const llave = celularLocal.get();
+  const r = llave ? await rpc('celular_estado', { p_celular: llave }) : { vinculado: false };
+  if (r.vinculado) {
+    pantallaMovil({ icono: 'ok', titulo: 'Celular vinculado',
+      texto: `Este celular está vinculado a <strong>${esc(r.nombre)}</strong>. Úsalo para escanear el QR cada vez que marques en la tienda.` });
+  } else {
+    pantallaMovil({ icono: 'info', titulo: 'Celular sin vincular', texto: 'Pídele al administrador que te muestre el código para vincular tu celular.' });
+  }
+}
+
+/* ============================================================
+   ADMINISTRADOR
+   ============================================================ */
+let datos = { empleados: [], registros: [], yo: null };
+const token = () => sesion.get('asis_token');
+
+const dlg = $('#adminDlg');
+$('#openAdmin').addEventListener('click', () => { $('#adminForm').reset(); $('#aMsg').classList.remove('show'); dlg.showModal(); $('#aUser').focus(); });
+$('#aCancel').addEventListener('click', () => dlg.close());
+$('#adminForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.submitter; if (btn) btn.disabled = true;
+  const r = await rpc('admin_login', { p_usuario: $('#aUser').value, p_clave: $('#aPass').value });
+  if (btn) btn.disabled = false;
+  if (r.error) return mostrarError($('#aMsg'), r.error);
+  sesion.set('asis_token', r.token);
+  sesion.set('asis_nombre', r.nombre);
+  dlg.close();
+  abrirAdmin();
+});
+
+function salirAdmin(aviso) {
+  sesion.del('asis_token'); sesion.del('asis_nombre');
+  $('#admin').classList.add('hidden'); $('#kiosk').classList.remove('hidden');
+  pintarPresentes(); verificarEquipo();
+  if (aviso) toast(aviso);
+}
+$('#logout').addEventListener('click', () => { rpc('admin_logout', { p_token: token() }); salirAdmin(); });
+
+async function abrirAdmin() {
+  $('#who').textContent = sesion.get('asis_nombre') || '';
+  $('#kiosk').classList.add('hidden'); $('#admin').classList.remove('hidden');
+  window.scrollTo(0, 0);
+  const hoy = new Date(), hace = new Date(); hace.setDate(hoy.getDate() - 6);
+  $('#fFrom').value = ymd(hace); $('#fTo').value = ymd(hoy);
+  $('#regBody').innerHTML = '<tr><td colspan="6" class="empty">Cargando registros…</td></tr>';
+  await recargar();
+}
+
+// Trae del servidor los registros del rango (con un día de margen para armar jornadas que cruzan la medianoche)
+async function cargarDatos() {
+  const from = $('#fFrom').value || ymd(Date.now() - 30 * 864e5), to = $('#fTo').value || ymd(new Date());
+  const desde = new Date(from + 'T00:00:00'); desde.setDate(desde.getDate() - 1);
+  const hasta = new Date(to + 'T23:59:59'); hasta.setDate(hasta.getDate() + 1);
+  const r = await rpc('admin_datos', { p_token: token(), p_desde: desde.toISOString(), p_hasta: hasta.toISOString() });
+  if (r.error) {
+    if (r.codigo === 'sesion') salirAdmin(r.error); else toast(r.error);
+    return false;
+  }
+  datos = r;
+  return true;
+}
+async function recargar() {
+  if (!(await cargarDatos())) return;
+  llenarFiltroEmpleados(); pintarRegistros(); pintarEmpleados(); pintarEquipos(); pintarUbicacion();
+}
+
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x === t));
+  ['registros', 'empleados', 'equipos'].forEach((n) => $('#tab-' + n).classList.toggle('hidden', t.dataset.tab !== n));
+}));
+
+function llenarFiltroEmpleados() {
+  const sel = $('#fEmp'), actual = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>' +
+    datos.empleados.map((e) => `<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
+  sel.value = actual;
+}
+['#fFrom', '#fTo'].forEach((s) => $(s).addEventListener('change', recargar));
+$('#fEmp').addEventListener('change', pintarRegistros);
+
+function jornadas() {
+  const abiertas = {}, out = [];
+  for (const r of datos.registros) {
+    if (r.tipo === 'ingreso') {
+      const j = { empleadoId: r.empleadoId, ingreso: r.fecha, salida: null, equipoIn: r.equipo, distIn: r.distancia };
+      out.push(j); abiertas[r.empleadoId] = j;
+    } else {
+      const j = abiertas[r.empleadoId];
+      if (j) { j.salida = r.fecha; j.equipoOut = r.equipo; j.distOut = r.distancia; delete abiertas[r.empleadoId]; }
+      else out.push({ empleadoId: r.empleadoId, ingreso: null, salida: r.fecha, equipoOut: r.equipo, distOut: r.distancia });
+    }
+  }
+  return out;
+}
+function estadoJornada(j) {
+  if (j.ingreso && j.salida) return 'cerrada';
+  if (j.ingreso && (Date.now() - new Date(j.ingreso)) / 3600000 <= MAX_JORNADA_H) return 'curso';
+  return 'incompleta';
+}
+
+const personaHtml = (e) => e
+  ? `<div class="person"><span class="avatar" style="background:${color(e.id)}">${esc(iniciales(e.nombre))}</span><div>${esc(e.nombre)}<small>${esc(e.cargo || '')}</small></div></div>`
+  : '<span class="muted">Empleado eliminado</span>';
+
+function filtrarJornadas() {
+  const from = $('#fFrom').value, to = $('#fTo').value, emp = $('#fEmp').value;
+  return jornadas().filter((j) => {
+    const d = ymd(j.ingreso || j.salida);
+    return (!from || d >= from) && (!to || d <= to) && (!emp || j.empleadoId === emp);
+  }).sort((a, b) => (b.ingreso || b.salida).localeCompare(a.ingreso || a.salida));
+}
+
+function pintarRegistros() {
+  const emps = Object.fromEntries(datos.empleados.map((e) => [e.id, e]));
+  const lista = filtrarJornadas();
+
+  const ahora = datos.empleados.filter((e) => e.activo && e.abierto);
+  $('#kNow').textContent = ahora.length;
+  $('#kNowHint').textContent = ahora.length ? ahora.map((e) => e.nombre.split(' ')[0]).join(', ') : 'Nadie en este momento';
+  const incluyeHoy = $('#fTo').value >= ymd(new Date());
+  $('#kToday').textContent = incluyeHoy ? datos.registros.filter((r) => r.tipo === 'ingreso' && esHoy(r.fecha)).length : '—';
+  $('#kTodayHint').textContent = `de ${datos.empleados.filter((e) => e.activo).length} empleados activos`;
+  const ms = lista.filter((j) => estadoJornada(j) === 'cerrada').reduce((a, j) => a + (new Date(j.salida) - new Date(j.ingreso)), 0);
+  $('#kHours').textContent = `${Math.round(ms / 360000) / 10} h`;
+  $('#kMissing').textContent = lista.filter((j) => estadoJornada(j) === 'incompleta').length;
+
+  if (!lista.length) { $('#regBody').innerHTML = '<tr><td colspan="6" class="empty">No hay registros en este rango de fechas.</td></tr>'; return; }
+
+  $('#regBody').innerHTML = lista.map((j) => {
+    const est = estadoJornada(j);
+    const horas = est === 'cerrada' ? fDuracion(new Date(j.salida) - new Date(j.ingreso))
+      : est === 'curso' ? `<span class="muted">${fDuracion(Date.now() - new Date(j.ingreso))}…</span>` : '<span class="muted">—</span>';
+    const badge = est === 'cerrada' ? '<span class="badge b-ok">Completa</span>'
+      : est === 'curso' ? '<span class="badge b-live">● En curso</span>'
+      : `<span class="badge b-warn">${j.ingreso ? 'Sin salida' : 'Sin ingreso'}</span>`;
+    return `<tr>
+      <td>${personaHtml(emps[j.empleadoId])}</td>
+      <td>${fFecha(j.ingreso || j.salida)}</td>
+      <td>${j.ingreso ? `<span class="t-in">${fHora(j.ingreso)}</span>${j.equipoIn ? `<small class="eq">${esc(j.equipoIn)}</small>` : ''}` : '<span class="muted">—</span>'}</td>
+      <td>${j.salida ? `<span class="t-out">${fHora(j.salida)}</span>${j.equipoOut ? `<small class="eq">${esc(j.equipoOut)}</small>` : ''}` : '<span class="muted">—</span>'}</td>
+      <td>${horas}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+$('#exportCsv').addEventListener('click', () => {
+  const emps = Object.fromEntries(datos.empleados.map((e) => [e.id, e]));
+  const filas = [['Empleado', 'Usuario', 'Cargo', 'Fecha', 'Ingreso', 'Salida', 'Horas', 'Estado', 'Equipo ingreso', 'Equipo salida', 'Celular a (m) al ingresar', 'Celular a (m) al salir']];
+  for (const j of filtrarJornadas()) {
+    const e = emps[j.empleadoId] || {}, est = estadoJornada(j);
+    filas.push([
+      e.nombre || '', e.usuario || '', e.cargo || '', ymd(j.ingreso || j.salida),
+      j.ingreso ? fHora(j.ingreso) : '', j.salida ? fHora(j.salida) : '',
+      est === 'cerrada' ? ((new Date(j.salida) - new Date(j.ingreso)) / 3600000).toFixed(2).replace('.', ',') : '',
+      { cerrada: 'Completa', curso: 'En curso', incompleta: 'Incompleta' }[est],
+      j.equipoIn || '', j.equipoOut || '', j.distIn ?? '', j.distOut ?? '',
+    ]);
+  }
+  const csv = '﻿' + filas.map((f) => f.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `asistencia_${$('#fFrom').value}_a_${$('#fTo').value}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+function pintarEmpleados() {
+  const yo = datos.yo;
+  $('#empBody').innerHTML = datos.empleados.map((e) => {
+    const estado = !e.activo ? '<span class="badge b-off">Inactivo</span>'
+      : e.abierto ? `<span class="badge b-live">● Desde ${fHora(e.abierto)}</span>`
+      : '<span class="badge b-off">Fuera</span>';
+    return `<tr>
+      <td>${personaHtml(e)}</td>
+      <td>${esc(e.usuario)} ${e.rol === 'admin' ? '<span class="badge b-admin">Admin</span>' : ''}</td>
+      <td>${estado}</td>
+      <td>${e.celular
+        ? `<span class="badge b-ok">Vinculado</span><small class="eq">${esc(e.celular.info.split(';').slice(-1)[0].trim())} · ${fFecha(e.celular.creado)}</small>`
+        : '<span class="badge b-warn">Sin vincular</span>'}</td>
+      <td>${e.activo ? 'Activa' : '<span class="muted">Desactivada</span>'}</td>
+      <td><div class="acts">
+        <button class="btn btn-sm" data-act="vincular" data-id="${e.id}">${e.celular ? 'Cambiar celular' : 'Vincular celular'}</button>
+        ${e.celular ? `<button class="btn btn-sm" data-act="quitarcel" data-id="${e.id}">Quitar celular</button>` : ''}
+        <button class="btn btn-sm" data-act="clave" data-id="${e.id}">Cambiar clave</button>
+        ${e.id === yo ? '' : `<button class="btn btn-sm" data-act="activo" data-id="${e.id}">${e.activo ? 'Desactivar' : 'Activar'}</button>`}
+        ${e.id === yo ? '' : `<button class="btn btn-sm btn-danger" data-act="borrar" data-id="${e.id}">Eliminar</button>`}
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+$('#empBody').addEventListener('click', async (ev) => {
+  const b = ev.target.closest('[data-act]'); if (!b) return;
+  const e = datos.empleados.find((x) => x.id === b.dataset.id); if (!e) return;
+  if (b.dataset.act === 'vincular') return abrirVinculo(e);
+  let r, ok;
+  if (b.dataset.act === 'quitarcel') {
+    if (!confirm(`¿Quitar el celular de ${e.nombre}? No podrá marcar hasta que vincule otro.`)) return;
+    r = await rpc('admin_quitar_celular', { p_token: token(), p_empleado: e.id });
+    ok = 'Celular desvinculado.';
+  } else if (b.dataset.act === 'clave') {
+    const nueva = prompt(`Nueva clave para ${e.nombre} (mínimo 4 caracteres):`);
+    if (nueva == null) return;
+    r = await rpc('admin_cambiar_clave', { p_token: token(), p_id: e.id, p_clave: nueva });
+    ok = 'Clave actualizada.';
+  } else if (b.dataset.act === 'activo') {
+    r = await rpc('admin_cambiar_activo', { p_token: token(), p_id: e.id, p_activo: !e.activo });
+    ok = e.activo ? `${e.nombre} desactivado.` : `${e.nombre} activado.`;
+  } else if (b.dataset.act === 'borrar') {
+    if (!confirm(`¿Eliminar a ${e.nombre}? Sus registros de asistencia se conservan.`)) return;
+    r = await rpc('admin_eliminar', { p_token: token(), p_id: e.id });
+    ok = 'Empleado eliminado.';
+  }
+  if (r.error) return r.codigo === 'sesion' ? salirAdmin(r.error) : toast(r.error);
+  toast(ok);
+  recargar();
+});
+
+async function abrirVinculo(e) {
+  const r = await rpc('admin_vincular_celular', { p_token: token(), p_empleado: e.id });
+  if (r.error) return r.codigo === 'sesion' ? salirAdmin(r.error) : toast(r.error);
+  $('#vincNombre').textContent = e.nombre;
+  pintarQr($('#vincQr'), `${BASE_URL}?vincular=${r.vinculo}`);
+  $('#vincDlg').showModal();
+}
+$('#vincCerrar').addEventListener('click', () => $('#vincDlg').close());
+$('#vincDlg').addEventListener('close', recargar);
+
+$('#empForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const btn = ev.submitter; if (btn) btn.disabled = true;
+  const r = await rpc('admin_crear_empleado', {
+    p_token: token(), p_usuario: $('#eUser').value, p_nombre: $('#eNombre').value,
+    p_cargo: $('#eCargo').value, p_rol: $('#eRol').value, p_clave: $('#ePass').value,
+  });
+  if (btn) btn.disabled = false;
+  if (r.error) return r.codigo === 'sesion' ? salirAdmin(r.error) : mostrarError($('#eMsg'), r.error);
+  $('#empForm').reset(); $('#eMsg').classList.remove('show');
+  toast('Empleado creado.');
+  recargar();
+});
+
+let ubicPintada;
+function pintarUbicacion() {
+  const c = datos.config || {};
+  const clave = JSON.stringify(c);
+  if (clave === ubicPintada) return;
+  ubicPintada = clave;
+  const radios = [...new Set([100, 200, 300, 500, c.radio])].filter(Boolean).sort((a, b) => a - b);
+  $('#ubicCard').innerHTML = `
+    <div>
+      <h3>Ubicación de la tienda</h3>
+      <p>${c.lat != null
+        ? `Configurada. El celular debe estar a menos de <strong>${c.radio} m</strong> de la tienda para recibir el código.`
+        : '<strong>Sin configurar:</strong> por ahora no se revisa dónde está el celular. Configúrala desde tu celular, estando dentro de la tienda.'}</p>
+    </div>
+    <div class="ubic-acts">
+      <select class="input" id="ubicRadio" aria-label="Distancia máxima">
+        ${radios.map((m) => `<option value="${m}" ${m === c.radio ? 'selected' : ''}>Hasta ${m} m</option>`).join('')}
+      </select>
+      <button class="btn btn-primary" id="ubicGuardar">Usar mi ubicación actual</button>
+      ${c.lat != null ? '<button class="btn btn-danger" id="ubicBorrar">Quitar</button>' : ''}
+    </div>
+    <div class="msg" id="ubicMsg"></div>`;
+}
+async function guardarTienda(lat, lng, radio, ok) {
+  const r = await rpc('admin_guardar_tienda', { p_token: token(), p_lat: lat, p_lng: lng, p_radio: radio });
+  if (r.error) return r.codigo === 'sesion' ? salirAdmin(r.error) : mostrarError($('#ubicMsg'), r.error);
+  toast(ok);
+  recargar();
+}
+$('#ubicCard').addEventListener('click', async (ev) => {
+  const c = datos.config || {};
+  const guardar = ev.target.closest('#ubicGuardar');
+  if (guardar) {
+    guardar.disabled = true; guardar.textContent = 'Obteniendo ubicación…';
+    const pos = await obtenerUbicacion();
+    guardar.disabled = false; guardar.textContent = 'Usar mi ubicación actual';
+    if (pos.error) return mostrarError($('#ubicMsg'), pos.error);
+    if (pos.precision > 100) {
+      return mostrarError($('#ubicMsg'), `La ubicación tiene un margen de error de ${Math.round(pos.precision)} m. Hazlo desde un celular con el GPS activado, dentro de la tienda.`);
+    }
+    guardarTienda(pos.lat, pos.lng, +$('#ubicRadio').value, 'Ubicación de la tienda guardada.');
+  } else if (ev.target.closest('#ubicBorrar')) {
+    if (!confirm('¿Quitar la ubicación? Ya no se revisará dónde está el celular al marcar.')) return;
+    guardarTienda(null, null, c.radio, 'Ubicación quitada.');
+  }
+});
+$('#ubicCard').addEventListener('change', (ev) => {
+  const c = datos.config || {};
+  if (ev.target.id === 'ubicRadio' && c.lat != null) guardarTienda(c.lat, c.lng, +ev.target.value, 'Distancia actualizada.');
+});
+
+let esteEquipoPintado;   // evita borrar lo que el admin está escribiendo cuando se recargan los datos
+function pintarEquipos() {
+  const este = equipo && datos.equipos.find((q) => q.id === equipo.id);
+  const clave = este ? este.id + este.nombre : 'ninguno';
+  if (clave !== esteEquipoPintado) {
+    esteEquipoPintado = clave;
+    $('#esteEquipo').innerHTML = este
+      ? `<h3>Este equipo</h3>
+         <p>Este computador está autorizado para marcar asistencia.</p>
+         <div class="person" style="margin-bottom:18px">
+           <span class="avatar" style="background:var(--in)">✓</span>
+           <div>${esc(este.nombre)}<small>Autorizado el ${fFecha(este.creado)}</small></div>
+         </div>
+         <button class="btn btn-danger" data-eq-quitar="${este.id}" style="width:100%;justify-content:center">Quitar autorización a este equipo</button>`
+      : `<h3>Autorizar este equipo</h3>
+         <p>Hazlo una vez en cada computador de la tienda. Este navegador quedará habilitado para marcar; los celulares y otros equipos no. No uses ventana de incógnito.</p>
+         <form id="eqForm" autocomplete="off">
+           <label class="field"><span>Nombre del equipo</span><input class="input" id="eqNombre" placeholder="Ej: Caja principal" required></label>
+           <div class="msg" id="eqMsg"></div>
+           <button class="btn btn-primary" style="width:100%;justify-content:center;height:48px">Autorizar este equipo</button>
+         </form>`;
+  }
+  $('#eqBody').innerHTML = datos.equipos.length ? datos.equipos.map((q) => `<tr>
+      <td>${esc(q.nombre)} ${este && q.id === este.id ? '<span class="badge b-live">Este equipo</span>' : ''}</td>
+      <td>${fFecha(q.creado)}</td>
+      <td>${q.ultimo_uso ? `${fFecha(q.ultimo_uso)}, ${fHora(q.ultimo_uso)}` : '<span class="muted">Nunca</span>'}</td>
+      <td><button class="btn btn-sm btn-danger" data-eq-quitar="${q.id}">Quitar autorización</button></td>
+    </tr>`).join('')
+    : '<tr><td colspan="4" class="empty">Todavía no hay equipos autorizados.<br>Nadie puede marcar hasta que autorices al menos uno.</td></tr>';
+}
+
+$('#tab-equipos').addEventListener('submit', async (ev) => {
+  if (ev.target.id !== 'eqForm') return;
+  ev.preventDefault();
+  const btn = ev.submitter; if (btn) btn.disabled = true;
+  const r = await rpc('admin_autorizar_equipo', { p_token: token(), p_nombre: $('#eqNombre').value });
+  if (btn) btn.disabled = false;
+  if (r.error) return r.codigo === 'sesion' ? salirAdmin(r.error) : mostrarError($('#eqMsg'), r.error);
+  if (!equipoLocal.set(r.llave)) {
+    await rpc('admin_revocar_equipo', { p_token: token(), p_id: r.id });
+    return mostrarError($('#eqMsg'), 'Este navegador no permite guardar datos. Ábrelo en una ventana normal e intenta de nuevo.');
+  }
+  equipo = { id: r.id, nombre: r.nombre };
+  pintarKiosco();
+  toast(`"${r.nombre}" quedó autorizado para marcar.`);
+  recargar();
+});
+
+$('#tab-equipos').addEventListener('click', async (ev) => {
+  const b = ev.target.closest('[data-eq-quitar]'); if (!b) return;
+  const q = datos.equipos.find((x) => x.id === b.dataset.eqQuitar); if (!q) return;
+  if (!confirm(`¿Quitar la autorización a "${q.nombre}"? Desde ese equipo ya no se podrá marcar.`)) return;
+  const r = await rpc('admin_revocar_equipo', { p_token: token(), p_id: q.id });
+  if (r.error) return r.codigo === 'sesion' ? salirAdmin(r.error) : toast(r.error);
+  if (equipo && equipo.id === q.id) { equipo = null; equipoLocal.del(); pintarKiosco(); }
+  toast('Autorización quitada.');
+  recargar();
+});
+
+function toast(t) {
+  const el = document.createElement('div'); el.className = 'toast'; el.textContent = t;
+  document.body.appendChild(el); setTimeout(() => el.remove(), 2600);
+}
+
+/* ---------- Inicio ---------- */
+tick(); setInterval(tick, 1000);
+setInterval(() => {
+  if (esCelular) return;
+  if ($('#admin').classList.contains('hidden')) pintarPresentes(); else recargar();
+}, 60000);
+(async () => {
+  if (esCelular) return iniciarMovil();
+  await verificarEquipo();
+  if (token()) abrirAdmin();
+  else { pintarPresentes(); $('#mUser').focus(); }
+})();
+</script>
+</body>
+</html>
